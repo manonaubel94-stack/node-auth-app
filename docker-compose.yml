@@ -1,0 +1,38 @@
+# Full stack: database + backend API + frontend (nginx).
+# Start it with: docker compose up -d --build   then open http://localhost:5173
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+      POSTGRES_DB: auth
+    volumes:
+      - db-data:/var/lib/postgresql/data   # users survive restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build: ./backend
+    image: ${DOCKERHUB_USERNAME:-manonaub}/auth-app:backend
+    environment:
+      DATABASE_URL: postgres://auth:auth@db:5432/auth
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.multistage
+    image: ${DOCKERHUB_USERNAME:-manonaub}/auth-app:frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:

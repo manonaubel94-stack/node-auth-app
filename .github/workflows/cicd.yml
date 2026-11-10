@@ -1,0 +1,56 @@
+# On every push to main: test the full stack, then push the images to Docker Hub.
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+    env:
+      # Used by docker-compose.yml to name the images <docker-id>/auth-app:frontend|backend
+      DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build the images and start the stack (db, backend, frontend)
+        run: docker compose up -d --build --wait
+
+      - name: Run the Playwright tests
+        run: npx playwright test
+
+      - name: Show container logs if something failed
+        if: failure()
+        run: docker compose logs
+
+      - name: Keep the test report if something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+      # The steps below only run if the tests passed.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push the frontend and backend images
+        run: docker compose push backend frontend
