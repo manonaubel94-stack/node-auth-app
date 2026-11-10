@@ -57,7 +57,7 @@ function renderForm(mode) {
 function renderWelcome() {
   app.innerHTML = `
     <h1></h1>
-    <p>You are logged in with Docker!</p>
+    <p>Deployed automatically with CI/CD!</p>
     <button type="button">Log out</button>`;
   app.querySelector("h1").textContent = `Welcome, ${currentUser}!`;
   app.querySelector("button").addEventListener("click", () => {
