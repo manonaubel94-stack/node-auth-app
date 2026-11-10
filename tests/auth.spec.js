@@ -30,7 +30,7 @@ test("registered user can log in", async ({ page }) => {
 test("login with invalid credentials shows an error", async ({ page }) => {
   await submitForm(page, username, "wrong-pass1", "Log in");
 
-  await expect(page.getByRole("alert")).toHaveText("Invalid username or password");
+  await expect(page.getByRole("alert")).toHaveText("Wrong message");
   await expect(page).toHaveURL(/#\/login$/);
   await expect(page.getByRole("heading", { name: "Welcome" })).toBeHidden();
 });
